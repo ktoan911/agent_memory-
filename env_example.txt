@@ -1,0 +1,17 @@
+# Google API Key (bắt buộc để chạy chatbot)
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Cấu hình mô hình
+MODEL_NAME=gemini-pro
+TEMPERATURE=0.7
+
+# Đường dẫn lưu trữ dữ liệu
+DATA_DIR=./data
+ENTITIES_DIR=./data/entities
+CHAT_HISTORY_DIR=./data/chat_history
+VECTOR_STORE_DIR=./data/vector_store
+
+# Hướng dẫn:
+# 1. Copy file này thành .env
+# 2. Thay your_google_api_key_here bằng API key thật
+# 3. Lấy API key tại: https://makersuite.google.com/app/apikey
