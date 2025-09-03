@@ -125,15 +125,15 @@ def main():
                         )
 
         # Tìm kiếm memory
-        st.divider()
-        st.subheader("🔍 Tìm kiếm Memory")
-        search_query = st.text_input("Tìm kiếm trong bộ nhớ:")
-        if search_query and st.button("Tìm kiếm"):
-            try:
-                search_results = chatbot.search_memory(search_query)
-                st.text_area("Kết quả tìm kiếm:", value=search_results, height=200)
-            except Exception as e:
-                st.error(f"Lỗi tìm kiếm: {e}")
+        # st.divider()
+        # st.subheader("🔍 Tìm kiếm Memory")
+        # search_query = st.text_input("Tìm kiếm trong bộ nhớ:")
+        # if search_query and st.button("Tìm kiếm"):
+        #     try:
+        #         search_results = chatbot.search_memory(search_query)
+        #         st.text_area("Kết quả tìm kiếm:", value=search_results, height=200)
+        #     except Exception as e:
+        #         st.error(f"Lỗi tìm kiếm: {e}")
 
     except Exception as e:
         st.error(f"Lỗi khởi tạo chatbot: {e}")
