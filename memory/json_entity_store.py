@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from langchain.memory.entity import BaseEntityStore
 from pydantic import Field
@@ -9,6 +9,8 @@ from config import CHAT_COL_ENTITIES, CHAT_DBNAME, MONGODB_URI
 
 class JSONEntityStore(BaseEntityStore):
     user_id: str = Field(default="")
+    client: Optional[Any] = Field(default=None)
+    col: Optional[Any] = Field(default=None)
 
     def __init__(self, user_id: str):
         # Initialize với user_id và data khác
@@ -22,6 +24,7 @@ class JSONEntityStore(BaseEntityStore):
             user_entity = {"user_id": self.user_id}
             self.col.insert_one(user_entity)
         return user_entity
+
     def clear(self) -> None:
         self.col.delete_one({"user_id": self.user_id})
 
@@ -42,3 +45,15 @@ class JSONEntityStore(BaseEntityStore):
             entities[entity_key].append(fact)
 
         self.col.update_one({"user_id": self.user_id}, {"$set": entities})
+
+    def delete(self):
+        return None
+
+    def exists(self):
+        return False
+
+    def get(self):
+        return []
+
+    def set(self, messages):
+        return None

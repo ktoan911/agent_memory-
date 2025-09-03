@@ -41,6 +41,18 @@ class JSONChatMessageHistory(BaseChatMessageHistory):
             "timestamp": message.timestamp,
         }
 
+    def delete(self):
+        return None
+
+    def exists(self):
+        return False
+
+    def get(self):
+        return []
+
+    def set(self, messages):
+        return None
+
     def _dict_to_message(self, message_dict: dict) -> BaseMessage:
         """Chuyển đổi dictionary thành BaseMessage"""
         message_type = message_dict["type"]
