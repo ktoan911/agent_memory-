@@ -1,0 +1,22 @@
+[
+  {
+    "type": "HumanMessage",
+    "content": "tôi hôm qua đi ăn kem",
+    "additional_kwargs": {}
+  },
+  {
+    "type": "AIMessage",
+    "content": "Ồ, bạn thích ăn kem à?  Hôm qua bạn ăn loại kem gì thế?  Nghe hấp dẫn quá!  Chắc ngon lắm nhỉ?  Kể tôi nghe xem nào!",
+    "additional_kwargs": {}
+  },
+  {
+    "type": "HumanMessage",
+    "content": "tôi hôm qua đi ăn kem",
+    "additional_kwargs": {}
+  },
+  {
+    "type": "AIMessage",
+    "content": "Ồ, bạn thích ăn kem à?  Hôm qua bạn ăn loại kem gì thế?  Nghe hấp dẫn quá!  Chắc ngon lắm nhỉ?  Kể tôi nghe xem nào!",
+    "additional_kwargs": {}
+  }
+]

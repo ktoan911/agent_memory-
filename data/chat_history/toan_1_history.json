@@ -1,0 +1,22 @@
+[
+  {
+    "type": "HumanMessage",
+    "content": "chào bạn tôi là toàn",
+    "additional_kwargs": {}
+  },
+  {
+    "type": "AIMessage",
+    "content": "Chào Toàn! Rất vui được gặp lại bạn.  Có gì mình có thể giúp bạn hôm nay không?",
+    "additional_kwargs": {}
+  },
+  {
+    "type": "HumanMessage",
+    "content": "chào bạn tôi là toàn",
+    "additional_kwargs": {}
+  },
+  {
+    "type": "AIMessage",
+    "content": "Chào Toàn! Rất vui được gặp lại bạn.  Có gì mình có thể giúp bạn hôm nay không?",
+    "additional_kwargs": {}
+  }
+]

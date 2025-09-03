@@ -1,12 +1,20 @@
 """
 Cấu hình cho Agent Memory System
 """
+
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+MONGODB_URI = os.getenv("MONGODB_URI")
+CHAT_DBNAME = os.getenv("CHAT_DBNAME", "chat_db")
+CHAT_COL_ENTITIES = os.getenv("CHAT_COL_ENTITIES", "entities")
+CHAT_COL_HISTORY = os.getenv("CHAT_COL_HISTORY", "history")
+CHAT_COL_VECTOR = os.getenv("CHAT_COL_VECTOR", "vector")
 
 # Cấu hình Gemini
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")

@@ -1,0 +1,31 @@
+{
+  "toan_0": {
+    "user_id": "toan",
+    "type": "user_message",
+    "timestamp": "2025-09-03T07:24:08"
+  },
+  "toan_1": {
+    "user_id": "toan",
+    "type": "ai_message",
+    "timestamp": "2025-09-03T07:24:11"
+  },
+  "toan_2": {
+    "user_id": "toan",
+    "type": "entity_fact",
+    "timestamp": "2025-09-03T07:24:11",
+    "entity": "tên"
+  },
+  "toan_3": {
+    "user_id": "toan",
+    "type": "entity_fact",
+    "timestamp": "2025-09-03T07:24:12",
+    "entity": "tuổi"
+  },
+  "toan_4": {
+    "user_id": "toan",
+    "type": "conversation",
+    "timestamp": "2025-09-03T07:24:12",
+    "user_input": "chào bạn tôi là toàn",
+    "ai_output": "Chào Toàn! Rất vui được gặp lại bạn.  Có gì mình có thể giúp bạn hôm nay không?"
+  }
+}

@@ -3,17 +3,23 @@ Vector Store Memory để lưu trữ và truy xuất thông tin dựa trên sema
 """
 
 import asyncio
-import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 from langchain.docstore.document import Document
 from langchain.schema import BaseMemory
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import MongoDBAtlasVectorSearch
 from pydantic import Field
+from pymongo import MongoClient
 
-from config import GOOGLE_API_KEY, MAX_RETRIEVED_MEMORIES, VECTOR_STORE_DIR
+from config import (
+    CHAT_COL_VECTOR,
+    CHAT_DBNAME,
+    GOOGLE_API_KEY,
+    MAX_RETRIEVED_MEMORIES,
+    MONGODB_URI,
+)
 
 from .safe_embeddings import SafeGoogleGenerativeAIEmbeddings
 
@@ -32,15 +38,8 @@ def ensure_event_loop():
 
 
 class VectorStoreMemory(BaseMemory):
-    """
-    Memory sử dụng FAISS vector store để lưu trữ và truy xuất thông tin
-    dựa trên semantic similarity
-    """
-
-    # Khai báo fields cho Pydantic
     user_id: str = Field(default="")
     embeddings: Optional[Any] = Field(default=None, exclude=True)
-    vector_store_path: Optional[Path] = Field(default=None, exclude=True)
     metadata_path: Optional[Path] = Field(default=None, exclude=True)
     vector_store: Optional[Any] = Field(default=None, exclude=True)
 
@@ -58,60 +57,38 @@ class VectorStoreMemory(BaseMemory):
         self.embeddings = SafeGoogleGenerativeAIEmbeddings(
             model="models/embedding-001", google_api_key=GOOGLE_API_KEY
         )
-        self.vector_store_path = VECTOR_STORE_DIR / f"{user_id}_vectorstore"
-        self.metadata_path = VECTOR_STORE_DIR / f"{user_id}_metadata.json"
 
-        # Khởi tạo hoặc tải vector store
+        self.client = MongoClient(MONGODB_URI)
+        self.col = self.client[CHAT_DBNAME][CHAT_COL_VECTOR]
         self._initialize_vector_store()
+
+    def _check_exist_user(self, user_id: str) -> bool:
+        """Kiểm tra xem người dùng đã tồn tại trong cơ sở dữ liệu hay chưa"""
+        user = self.col.find_one({"user_id": user_id})
+        return user is not None
 
     def _initialize_vector_store(self) -> None:
         """Khởi tạo hoặc tải vector store từ file"""
         try:
-            if self.vector_store_path.exists():
-                # Tải vector store hiện có
-                self.vector_store = FAISS.load_local(
-                    str(self.vector_store_path),
-                    self.embeddings,
-                    allow_dangerous_deserialization=True,
-                )
+            if self._check_exist_user(self.user_id):
+                self.vector_store = MongoDBAtlasVectorSearch(self.col, self.embeddings)
             else:
-                # Tạo vector store mới với document dummy
                 dummy_doc = Document(
                     page_content="Khởi tạo vector store",
                     metadata={"user_id": self.user_id, "type": "init"},
                 )
-                self.vector_store = FAISS.from_documents([dummy_doc], self.embeddings)
-                self._save_vector_store()
+                self.vector_store = MongoDBAtlasVectorSearch(
+                    self.col, self.embeddings
+                ).from_documents([dummy_doc], self.embeddings)
         except Exception as e:
             print(f"Lỗi khi khởi tạo vector store: {e}")
             dummy_doc = Document(
                 page_content="Khởi tạo vector store",
                 metadata={"user_id": self.user_id, "type": "init"},
             )
-            self.vector_store = FAISS.from_documents([dummy_doc], self.embeddings)
-            self._save_vector_store()
-
-    def _save_vector_store(self) -> None:
-        """Lưu vector store vào file"""
-        try:
-            self.vector_store.save_local(str(self.vector_store_path))
-        except Exception as e:
-            print(f"Lỗi khi lưu vector store: {e}")
-
-    def _load_metadata(self) -> Dict[str, Any]:
-        """Tải metadata từ file"""
-        if self.metadata_path.exists():
-            try:
-                with open(self.metadata_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except (FileNotFoundError, json.JSONDecodeError):
-                return {}
-        return {}
-
-    def _save_metadata(self, metadata: Dict[str, Any]) -> None:
-        """Lưu metadata vào file"""
-        with open(self.metadata_path, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, ensure_ascii=False, indent=2)
+            self.vector_store = MongoDBAtlasVectorSearch(
+                self.col, self.embeddings
+            ).from_documents([dummy_doc], self.embeddings)
 
     def add_memory(
         self,
@@ -119,7 +96,6 @@ class VectorStoreMemory(BaseMemory):
         memory_type: str = "conversation",
         additional_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-
         ensure_event_loop()
 
         metadata = {
@@ -134,40 +110,19 @@ class VectorStoreMemory(BaseMemory):
         document = Document(page_content=content, metadata=metadata)
 
         try:
-            # Thêm document vào vector store
             self.vector_store.add_documents([document])
-            self._save_vector_store()
-
-            # Cập nhật metadata tracking
-            all_metadata = self._load_metadata()
-            memory_id = f"{self.user_id}_{len(all_metadata)}"
-            all_metadata[memory_id] = metadata
-            self._save_metadata(all_metadata)
-
         except Exception as e:
             print(f"Lỗi khi thêm memory: {e}")
 
     def retrieve_memories(
         self, query: str, k: int = MAX_RETRIEVED_MEMORIES
     ) -> List[Document]:
-        """
-        Truy xuất memories liên quan dựa trên query
-
-        Args:
-            query: Câu hỏi hoặc nội dung cần tìm
-            k: Số lượng memories tối đa cần truy xuất
-
-        Returns:
-            Danh sách các documents liên quan
-        """
-        # Đảm bảo có event loop
         ensure_event_loop()
 
         try:
             # Tìm kiếm similarity
             docs = self.vector_store.similarity_search(query, k=k)
 
-            # Lọc bỏ document dummy init
             filtered_docs = [doc for doc in docs if doc.metadata.get("type") != "init"]
 
             return filtered_docs
@@ -175,49 +130,7 @@ class VectorStoreMemory(BaseMemory):
             print(f"Lỗi khi truy xuất memories: {e}")
             return []
 
-    def retrieve_memories_with_scores(
-        self, query: str, k: int = MAX_RETRIEVED_MEMORIES
-    ) -> List[tuple]:
-        """
-        Truy xuất memories với điểm số similarity
-
-        Args:
-            query: Câu hỏi hoặc nội dung cần tìm
-            k: Số lượng memories tối đa cần truy xuất
-
-        Returns:
-            Danh sách tuple (document, score)
-        """
-        # Đảm bảo có event loop
-        ensure_event_loop()
-
-        try:
-            docs_with_scores = self.vector_store.similarity_search_with_score(
-                query, k=k
-            )
-
-            # Lọc bỏ document dummy init
-            filtered_docs = [
-                (doc, score)
-                for doc, score in docs_with_scores
-                if doc.metadata.get("type") != "init"
-            ]
-
-            return filtered_docs
-        except Exception as e:
-            print(f"Lỗi khi truy xuất memories với scores: {e}")
-            return []
-
     def get_memory_summary(self, query: str) -> str:
-        """
-        Tạo tóm tắt memories liên quan đến query
-
-        Args:
-            query: Câu hỏi hoặc chủ đề
-
-        Returns:
-            Chuỗi tóm tắt các memories liên quan
-        """
         memories = self.retrieve_memories(query)
 
         if not memories:
@@ -240,31 +153,20 @@ class VectorStoreMemory(BaseMemory):
         """Xóa tất cả memories"""
         try:
             # Tạo lại vector store với document dummy
+            self.col.delete_many({"user_id": self.user_id})
             dummy_doc = Document(
                 page_content="Khởi tạo vector store",
                 metadata={"user_id": self.user_id, "type": "init"},
             )
-            self.vector_store = FAISS.from_documents([dummy_doc], self.embeddings)
-            self._save_vector_store()
-
-            # Xóa metadata
-            self._save_metadata({})
+            self.vector_store = MongoDBAtlasVectorSearch.from_documents(
+                [dummy_doc], self.embeddings
+            )
 
         except Exception as e:
             print(f"Lỗi khi xóa memories: {e}")
 
     def clear(self) -> None:
-        """Xóa tất cả memories (required by BaseMemory)"""
         self.clear_memories()
-
-    def get_memories_count(self) -> int:
-        """Lấy số lượng memories (không tính document init)"""
-        try:
-            # Đếm documents trong vector store
-            all_docs = self.vector_store.similarity_search("", k=1000)  # Lấy tất cả
-            return len([doc for doc in all_docs if doc.metadata.get("type") != "init"])
-        except Exception:
-            return 0
 
     @property
     def memory_variables(self) -> List[str]:

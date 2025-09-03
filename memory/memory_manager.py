@@ -18,18 +18,11 @@ class MemoryManager:
     Kết hợp Entity Memory, Chat History và Vector Memory
     """
 
-    def __init__(self, user_id: str, session_id: str = "default"):
-        """
-        Khởi tạo MemoryManager
-
-        Args:
-            user_id: ID của người dùng
-            session_id: ID của phiên trò chuyện
-        """
+    def __init__(self, user_id: str, llm, session_id: str = "default"):
         self.user_id = user_id
         self.session_id = session_id
+        self.llm = llm
 
-        # Khởi tạo các loại memory
         self._initialize_memories()
 
     def _initialize_memories(self) -> None:
@@ -48,10 +41,12 @@ class MemoryManager:
             return_messages=True,
         )
 
-        # 4. Entity Memory để theo dõi thông tin thực thể
-        # Note: ConversationEntityMemory hiện tại yêu cầu LLM,
-        # chúng ta sẽ khởi tạo nó khi có LLM hoặc sử dụng entity_store trực tiếp
-        self.entity_memory = None  # Sẽ được khởi tạo khi cần với LLM
+        self.entity_memory = ConversationEntityMemory(
+            entity_store=self.entity_store,
+            llm=self.llm,
+            memory_key="entities",
+            return_messages=True,
+        )
 
         # 5. Vector Store Memory để semantic search
         self.vector_memory = VectorStoreMemory(self.user_id)
@@ -215,7 +210,6 @@ class MemoryManager:
             "session_id": self.session_id,
             "total_messages": self.chat_history.get_messages_count(),
             "total_entities": len(self.entity_store.get_all_entities()),
-            "total_vector_memories": self.vector_memory.get_memories_count(),
             "conversation_summary": self.chat_history.get_conversation_summary(),
             "entities": self.entity_store.get_all_entities(),
         }
@@ -231,16 +225,6 @@ class MemoryManager:
         self.vector_memory.clear_memories()
 
     def search_chat_history(self, query: str, limit: int = 5) -> List[BaseMessage]:
-        """
-        Tìm kiếm trong lịch sử chat
-
-        Args:
-            query: Từ khóa tìm kiếm
-            limit: Số lượng kết quả tối đa
-
-        Returns:
-            Danh sách messages chứa từ khóa
-        """
         return self.chat_history.search_messages(query, limit)
 
     def get_comprehensive_context(

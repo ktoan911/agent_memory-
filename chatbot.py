@@ -12,10 +12,6 @@ from memory.memory_manager import MemoryManager
 
 
 class MemoryChatbot:
-    """
-    Chatbot với memory tích hợp sử dụng Google Gemini
-    """
-
     def __init__(self, user_id: str, session_id: str = "default"):
         """
         Khởi tạo chatbot
@@ -36,10 +32,7 @@ class MemoryChatbot:
         )
 
         # Khởi tạo Memory Manager
-        self.memory_manager = MemoryManager(user_id, session_id)
-
-        # Khởi tạo entity memory với LLM
-        self.memory_manager.initialize_entity_memory_with_llm(self.llm)
+        self.memory_manager = MemoryManager(user_id, self.llm, session_id)
 
         # System prompt cho chatbot
         self.system_prompt = """Bạn là một AI assistant thông minh và thân thiện. 
@@ -51,16 +44,6 @@ class MemoryChatbot:
         Luôn trả lời một cách tự nhiên, thân thiện và hữu ích."""
 
     def _build_context_prompt(self, user_input: str) -> str:
-        """
-        Xây dựng prompt với context từ memory
-
-        Args:
-            user_input: Input của người dùng
-
-        Returns:
-            Prompt đầy đủ với context
-        """
-        # Lấy context toàn diện
         context = self.memory_manager.get_comprehensive_context(user_input)
 
         # Xây dựng prompt
@@ -99,20 +82,12 @@ class MemoryChatbot:
 
         return "\n".join(prompt_parts)
 
-    def _extract_and_save_entities(self, user_input: str, ai_response: str) -> None:
-        """
-        Trích xuất và lưu thông tin thực thể từ cuộc trò chuyện
-
-        Args:
-            user_input: Input của người dùng
-            ai_response: Phản hồi của AI
-        """
-        # Danh sách các từ khóa để nhận diện thông tin cá nhân
+    def _extract_and_save_entities(self, user_input: str) -> None:
         personal_keywords = {
             "tên": ["tên tôi là", "tôi tên", "mình tên", "tôi là"],
             "tuổi": ["tôi", "tuổi", "năm nay", "sinh năm"],
             "nghề nghiệp": ["tôi làm", "nghề", "công việc", "làm việc tại"],
-            "sở thích": ["thích", "yêu thích", "sở thích", "hobby"],
+            "sở thích": ["thích", "yêu thích", "sở thích", "hobby", "yêu"],
             "địa chỉ": ["tôi ở", "sống ở", "địa chỉ", "quê ở"],
             "gia đình": ["vợ", "chồng", "con", "bố mẹ", "anh chị em"],
         }
@@ -125,17 +100,8 @@ class MemoryChatbot:
                     # Lưu thông tin vào entity store
                     self.memory_manager.add_entity_fact(entity_type, user_input)
                     break
-
+    
     def chat(self, user_input: str) -> str:
-        """
-        Xử lý tin nhắn từ người dùng và trả về phản hồi
-
-        Args:
-            user_input: Tin nhắn từ người dùng
-
-        Returns:
-            Phản hồi từ AI
-        """
         try:
             # Lưu tin nhắn của người dùng
             self.memory_manager.add_user_message(user_input)
@@ -166,44 +132,18 @@ class MemoryChatbot:
             return error_msg
 
     def get_memory_summary(self) -> Dict[str, Any]:
-        """
-        Lấy tóm tắt memory của người dùng
-
-        Returns:
-            Dictionary chứa thông tin tóm tắt
-        """
         return self.memory_manager.get_memory_summary()
 
     def search_memory(self, query: str) -> str:
-        """
-        Tìm kiếm trong memory
-
-        Args:
-            query: Câu hỏi tìm kiếm
-
-        Returns:
-            Kết quả tìm kiếm
-        """
         return self.memory_manager.search_relevant_memories(query)
 
     def clear_session(self) -> None:
-        """Xóa memory của session hiện tại"""
         self.memory_manager.clear_session_memory()
 
     def clear_all_memory(self) -> None:
-        """Xóa tất cả memory của người dùng"""
         self.memory_manager.clear_all_memory()
 
     def get_conversation_history(self, limit: int = 10) -> list:
-        """
-        Lấy lịch sử trò chuyện
-
-        Args:
-            limit: Số lượng tin nhắn tối đa
-
-        Returns:
-            Danh sách tin nhắn
-        """
         messages = self.memory_manager.get_conversation_context(limit)
         history = []
 

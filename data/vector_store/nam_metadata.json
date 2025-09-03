@@ -1,0 +1,25 @@
+{
+  "nam_0": {
+    "user_id": "nam",
+    "type": "user_message",
+    "timestamp": "2025-09-03T07:24:23"
+  },
+  "nam_1": {
+    "user_id": "nam",
+    "type": "ai_message",
+    "timestamp": "2025-09-03T07:24:25"
+  },
+  "nam_2": {
+    "user_id": "nam",
+    "type": "entity_fact",
+    "timestamp": "2025-09-03T07:24:25",
+    "entity": "tuổi"
+  },
+  "nam_3": {
+    "user_id": "nam",
+    "type": "conversation",
+    "timestamp": "2025-09-03T07:24:26",
+    "user_input": "tôi hôm qua đi ăn kem",
+    "ai_output": "Ồ, bạn thích ăn kem à?  Hôm qua bạn ăn loại kem gì thế?  Nghe hấp dẫn quá!  Chắc ngon lắm nhỉ?  Kể tôi nghe xem nào!"
+  }
+}
