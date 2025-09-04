@@ -29,7 +29,9 @@ class JSONEntityStore(BaseEntityStore):
         self.col.delete_one({"user_id": self.user_id})
 
     def get_all_entities(self) -> Dict[str, List[str]]:
-        return self._get_user_entity()
+        user_entity = self._get_user_entity()
+        # Return only the entity data, excluding user_id and MongoDB _id
+        return {k: v for k, v in user_entity.items() if k not in ["_id", "user_id"]}
 
     def get_entity_facts(self, entity_key: str) -> List[str]:
         entities = self._get_user_entity()

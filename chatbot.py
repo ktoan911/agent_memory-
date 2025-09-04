@@ -35,13 +35,9 @@ class MemoryChatbot:
         self.memory_manager = MemoryManager(user_id, self.llm, session_id)
 
         # System prompt cho chatbot
-        self.system_prompt = """Bạn là một AI assistant thông minh và thân thiện. 
-        Bạn có khả năng nhớ thông tin về người dùng qua nhiều cuộc trò chuyện.
-        
-        Hãy sử dụng thông tin từ bộ nhớ để cung cấp câu trả lời cá nhân hóa và phù hợp.
-        Nếu bạn học được thông tin mới về người dùng, hãy ghi nhớ nó.
-        
-        Luôn trả lời một cách tự nhiên, thân thiện và hữu ích."""
+        self.system_prompt = """Bạn là AI assistant thân thiện, 
+        có khả năng nhớ và sử dụng thông tin từ các cuộc trò chuyện 
+        trước để trả lời tự nhiên, cá nhân hóa."""
 
     def _build_context_prompt(self, user_input: str) -> str:
         context = self.memory_manager.get_comprehensive_context(user_input)
@@ -50,15 +46,15 @@ class MemoryChatbot:
         prompt_parts = [self.system_prompt]
 
         # Thêm thông tin về entities (thông tin cá nhân)
-        if context["relevant_entities"]:
+        if context.get("relevant_entities"):
             prompt_parts.append("\n=== THÔNG TIN ĐÃ BIẾT VỀ NGƯỜI DÙNG ===")
             for entity, facts in context["relevant_entities"].items():
-                if facts:
+                if facts and isinstance(facts, list):
                     prompt_parts.append(f"{entity}: {', '.join(facts)}")
 
         # Thêm memories liên quan
         if (
-            context["relevant_memories"]
+            context.get("relevant_memories")
             and context["relevant_memories"]
             != "Không tìm thấy thông tin liên quan trong bộ nhớ."
         ):
@@ -68,13 +64,14 @@ class MemoryChatbot:
             prompt_parts.append(context["relevant_memories"])
 
         # Thêm lịch sử trò chuyện gần đây
-        if context["recent_conversation"]:
+        if context.get("recent_conversation"):
             prompt_parts.append("\n=== LỊCH SỬ TRÒ CHUYỆN GẦN ĐÂY ===")
             for msg in context["recent_conversation"][
                 -5:
             ]:  # Chỉ lấy 5 tin nhắn gần nhất
-                role = "Người dùng" if msg["role"] == "human" else "AI"
-                prompt_parts.append(f"{role}: {msg['content']}")
+                if isinstance(msg, dict) and "role" in msg and "content" in msg:
+                    role = "Người dùng" if msg["role"] == "human" else "AI"
+                    prompt_parts.append(f"{role}: {msg['content']}")
 
         # Thêm câu hỏi hiện tại
         prompt_parts.append(f"\n=== CÂU HỎI HIỆN TẠI ===\nNgười dùng: {user_input}")
@@ -100,12 +97,9 @@ class MemoryChatbot:
                     # Lưu thông tin vào entity store
                     self.memory_manager.add_entity_fact(entity_type, user_input)
                     break
-    
+
     def chat(self, user_input: str) -> str:
         try:
-            # Lưu tin nhắn của người dùng
-            self.memory_manager.add_user_message(user_input)
-
             # Xây dựng prompt với context
             full_prompt = self._build_context_prompt(user_input)
 
@@ -113,11 +107,8 @@ class MemoryChatbot:
             response = self.llm.invoke([HumanMessage(content=full_prompt)])
             ai_response = response.content
 
-            # Lưu phản hồi của AI
-            self.memory_manager.add_ai_message(ai_response)
-
             # Trích xuất và lưu thông tin thực thể
-            self._extract_and_save_entities(user_input, ai_response)
+            self._extract_and_save_entities(user_input)
 
             # Lưu context cho các memory khác
             self.memory_manager.save_conversation_context(

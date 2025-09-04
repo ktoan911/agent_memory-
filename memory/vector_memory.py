@@ -66,39 +66,41 @@ class VectorStoreMemory(BaseMemory):
 
         self.client = MongoClient(MONGODB_URI)
         self.col = self.client[CHAT_DBNAME][CHAT_COL_VECTOR]
-        self._initialize_vector_store()
+        self.vector_store = MongoDBAtlasVectorSearch(
+            collection=self.col, embedding=self.embeddings
+        )
 
     def _check_exist_user(self, user_id: str) -> bool:
         """Kiểm tra xem người dùng đã tồn tại trong cơ sở dữ liệu hay chưa"""
         user = self.col.find_one({"user_id": user_id})
         return user is not None
 
-    def _initialize_vector_store(self) -> None:
-        """Khởi tạo hoặc tải vector store từ file"""
-        try:
-            if self._check_exist_user(self.user_id):
-                self.vector_store = MongoDBAtlasVectorSearch(
-                    collection=self.col, embedding=self.embeddings
-                )
-            else:
-                dummy_doc = Document(
-                    page_content="Khởi tạo vector store",
-                    metadata={"user_id": self.user_id, "type": "init"},
-                )
-                self.vector_store = MongoDBAtlasVectorSearch.from_documents(
-                    documents=[dummy_doc],
-                    embedding=self.embeddings,
-                    collection=self.col,
-                )
-        except Exception as e:
-            print(f"Lỗi khi khởi tạo vector store: {e}")
-            dummy_doc = Document(
-                page_content="Khởi tạo vector store",
-                metadata={"user_id": self.user_id, "type": "init"},
-            )
-            self.vector_store = MongoDBAtlasVectorSearch.from_documents(
-                documents=[dummy_doc], embedding=self.embeddings, collection=self.col
-            )
+    # def _initialize_vector_store(self) -> None:
+    #     """Khởi tạo hoặc tải vector store từ file"""
+    #     try:
+    #         if self._check_exist_user(self.user_id):
+    #             self.vector_store = MongoDBAtlasVectorSearch(
+    #                 collection=self.col, embedding=self.embeddings
+    #             )
+    #         else:
+    #             dummy_doc = Document(
+    #                 page_content="Khởi tạo vector store",
+    #                 metadata={"user_id": self.user_id, "type": "init"},
+    #             )
+    #             self.vector_store = MongoDBAtlasVectorSearch.from_documents(
+    #                 documents=[dummy_doc],
+    #                 embedding=self.embeddings,
+    #                 collection=self.col,
+    #             )
+    #     except Exception as e:
+    #         print(f"Lỗi khi khởi tạo vector store: {e}")
+    #         dummy_doc = Document(
+    #             page_content="Khởi tạo vector store",
+    #             metadata={"user_id": self.user_id, "type": "init"},
+    #         )
+    #         self.vector_store = MongoDBAtlasVectorSearch.from_documents(
+    #             documents=[dummy_doc], embedding=self.embeddings, collection=self.col
+    #         )
 
     def add_memory(
         self,

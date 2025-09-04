@@ -3,7 +3,7 @@ JSON-based Chat Message History để lưu trữ lịch sử trò chuyện
 """
 
 import json
-from time import time
+import time
 from typing import List
 
 from langchain.schema import BaseChatMessageHistory
@@ -38,7 +38,7 @@ class JSONChatMessageHistory(BaseChatMessageHistory):
             "content": message.content,
             "user_id": self.user_id,
             "session_id": self.session_id,
-            "timestamp": message.timestamp,
+            "timestamp": time.time(),
         }
 
     def delete(self):
@@ -74,6 +74,7 @@ class JSONChatMessageHistory(BaseChatMessageHistory):
             )
             if not message_dicts:
                 return []
+            return message_dicts
         except (FileNotFoundError, json.JSONDecodeError):
             return []
 
@@ -87,12 +88,10 @@ class JSONChatMessageHistory(BaseChatMessageHistory):
         self.col.insert_one(self._message_to_dict(message))
 
     def add_user_message(self, message: str) -> None:
-        timestamp = time.time()
-        self.add_message(HumanMessage(content=message, timestamp=timestamp))
+        self.add_message(HumanMessage(content=message))
 
     def add_ai_message(self, message: str) -> None:
-        timestamp = time.time()
-        self.add_message(AIMessage(content=message, timestamp=timestamp))
+        self.add_message(AIMessage(content=message))
 
     def clear(self) -> None:
         self.col.delete_many({"user_id": self.user_id, "session_id": self.session_id})
